@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 fn main() {
     println!("Hello, world!");
@@ -306,4 +306,43 @@ fn day05_pt2() {
     }
 
     println!("{:?}", res);
+}
+
+// 4:23
+#[test]
+fn day06_pt1() {
+    let input = std::include_str!("inputs/day06.txt");
+
+    let count: usize = input
+        .split("\n\n")
+        .map(|group| {
+            group
+                .lines()
+                .flat_map(|person| person.bytes())
+                .collect::<HashSet<u8>>()
+        })
+        .map(|unique| unique.len())
+        .sum();
+
+    println!("{}", count);
+}
+
+// 3:29
+#[test]
+fn day06_pt2() {
+    let input = std::include_str!("inputs/day06.txt");
+
+    let count: usize = input
+        .split("\n\n")
+        .map(|group| {
+            let mut set: HashSet<_> = (b'a'..=b'z').collect();
+            group
+                .lines()
+                .for_each(|person| set.retain(|a| person.as_bytes().contains(a)));
+            set
+        })
+        .map(|unique| unique.len())
+        .sum();
+
+    println!("{}", count);
 }
