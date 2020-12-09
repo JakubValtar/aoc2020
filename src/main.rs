@@ -453,3 +453,110 @@ fn day07_pt2() {
 
     println!("{}", count);
 }
+
+// 11:27
+#[test]
+fn day08_pt1() {
+    let input = std::include_str!("inputs/day08.txt");
+
+    enum Instr {
+        Nop,
+        Acc(i32),
+        Jmp(i32),
+    }
+
+    let program: Vec<_> = input
+        .lines()
+        .map(|line| {
+            if line.starts_with("nop") {
+                Instr::Nop
+            } else if let Some(n) = line.strip_prefix("acc ") {
+                Instr::Acc(n.parse().unwrap())
+            } else if let Some(n) = line.strip_prefix("jmp ") {
+                Instr::Jmp(n.parse().unwrap())
+            } else {
+                unreachable!()
+            }
+        })
+        .collect();
+
+    let mut pc = 0;
+    let mut acc = 0;
+    let mut visited = vec![false; program.len()];
+
+    while !visited[pc] {
+        visited[pc] = true;
+        match program[pc] {
+            Instr::Nop => pc += 1,
+            Instr::Acc(n) => {
+                acc += n;
+                pc += 1;
+            }
+            Instr::Jmp(n) => pc = (pc as i32 + n) as usize,
+        }
+    }
+
+    println!("{}", acc);
+}
+
+// 6:57
+#[test]
+fn day08_pt2() {
+    let input = std::include_str!("inputs/day08.txt");
+
+    enum Instr {
+        Nop(i32),
+        Acc(i32),
+        Jmp(i32),
+    }
+
+    let mut program: Vec<_> = input
+        .lines()
+        .map(|line| {
+            if let Some(n) = line.strip_prefix("nop ") {
+                Instr::Nop(n.parse().unwrap())
+            } else if let Some(n) = line.strip_prefix("acc ") {
+                Instr::Acc(n.parse().unwrap())
+            } else if let Some(n) = line.strip_prefix("jmp ") {
+                Instr::Jmp(n.parse().unwrap())
+            } else {
+                unreachable!()
+            }
+        })
+        .collect();
+
+    for i in 0..program.len() {
+        match program[i] {
+            Instr::Acc(_) => continue,
+            Instr::Jmp(n) => program[i] = Instr::Nop(n),
+            Instr::Nop(n) => program[i] = Instr::Jmp(n),
+        }
+
+        let mut pc = 0;
+        let mut acc = 0;
+        let mut visited = vec![false; program.len()];
+
+        while pc < program.len() && !visited[pc] {
+            visited[pc] = true;
+            match program[pc] {
+                Instr::Nop(_) => pc += 1,
+                Instr::Acc(n) => {
+                    acc += n;
+                    pc += 1;
+                }
+                Instr::Jmp(n) => pc = (pc as i32 + n) as usize,
+            }
+        }
+
+        match program[i] {
+            Instr::Acc(_) => unreachable!(),
+            Instr::Jmp(n) => program[i] = Instr::Nop(n),
+            Instr::Nop(n) => program[i] = Instr::Jmp(n),
+        }
+
+        if pc == program.len() {
+            println!("{}", acc);
+            break;
+        }
+    }
+}
