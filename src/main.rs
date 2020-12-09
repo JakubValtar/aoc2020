@@ -346,3 +346,110 @@ fn day06_pt2() {
 
     println!("{}", count);
 }
+
+// 44:49
+#[test]
+fn day07_pt1() {
+    let input = std::include_str!("inputs/day07.txt");
+
+    let rules = input
+        .lines()
+        .flat_map(|line| {
+            let mut words = line.split(' ');
+            let mut from = String::new();
+            from.push_str(words.next().unwrap());
+            from.push(' ');
+            from.push_str(words.next().unwrap());
+
+            words.next(); // bags
+            words.next(); // contain
+
+            let mut to = Vec::new();
+
+            while let Some(count) = words.next() {
+                let count = match count.parse::<u32>() {
+                    Ok(count) => count,
+                    _ => break,
+                };
+                let mut color = String::new();
+                color.push_str(words.next().unwrap());
+                color.push(' ');
+                color.push_str(words.next().unwrap());
+                words.next(); // bags
+
+                to.push((count, color));
+            }
+
+            to.into_iter().map(move |to| (from.clone(), to.1))
+        })
+        .collect::<Vec<(String, String)>>();
+
+    let mut parents: HashMap<String, Vec<String>> = HashMap::new();
+    for (from, to) in rules {
+        parents.entry(to).or_default().push(from);
+    }
+
+    let mut visited = HashSet::new();
+    let mut to_visit_stack = vec![String::from("shiny gold")];
+    while let Some(to_visit) = to_visit_stack.pop() {
+        for parent in parents.get(&to_visit).map(|v| v.as_slice()).unwrap_or(&[]) {
+            if visited.insert(parent.clone()) {
+                to_visit_stack.push(parent.clone());
+            }
+        }
+    }
+
+    println!("{}", visited.len());
+}
+
+// 9:38
+#[test]
+fn day07_pt2() {
+    let input = std::include_str!("inputs/day07.txt");
+
+    let rules = input
+        .lines()
+        .map(|line| {
+            let mut words = line.split(' ');
+            let mut from = String::new();
+            from.push_str(words.next().unwrap());
+            from.push(' ');
+            from.push_str(words.next().unwrap());
+
+            words.next(); // bags
+            words.next(); // contain
+
+            let mut to = Vec::new();
+
+            while let Some(count) = words.next() {
+                let count = match count.parse::<u32>() {
+                    Ok(count) => count,
+                    _ => break, // no other bags
+                };
+                let mut color = String::new();
+                color.push_str(words.next().unwrap());
+                color.push(' ');
+                color.push_str(words.next().unwrap());
+                words.next(); // bags
+
+                to.push((count, color));
+            }
+
+            (from, to)
+        })
+        .collect::<HashMap<String, Vec<(u32, String)>>>();
+
+    fn count_inner_bags(rules: &HashMap<String, Vec<(u32, String)>>, bag: &str) -> u32 {
+        let mut sum = 0;
+        if let Some(inner_bags) = rules.get(bag) {
+            for (cnt, inner_bag) in inner_bags {
+                sum += cnt * (1 + count_inner_bags(rules, inner_bag));
+            }
+        }
+        sum
+    }
+
+    let count = count_inner_bags(&rules, "shiny gold");
+
+    println!("{}", count);
+}
