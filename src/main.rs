@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    iter,
+};
 
 fn main() {
     println!("Hello, world!");
@@ -645,4 +648,149 @@ fn day10_pt2() {
     }
 
     println!("{:?}", combs.last());
+}
+
+// 26:16
+#[test]
+fn day11_pt1() {
+    let input = std::include_str!("inputs/day11.txt");
+
+    let width = input.lines().next().unwrap().len() + 2;
+    let height = input.lines().count() + 2;
+
+    #[derive(Copy, Clone, PartialEq)]
+    #[repr(u8)]
+    enum State {
+        Floor,
+        Empty,
+        Occupied,
+    }
+
+    let mut grid: Vec<State> = iter::repeat(State::Floor)
+        .take(width)
+        .chain(input.lines().flat_map(|l| {
+            iter::once(State::Floor)
+                .chain(l.bytes().map(|c| match c {
+                    b'.' => State::Floor,
+                    b'L' => State::Empty,
+                    _ => State::Occupied,
+                }))
+                .chain(iter::once(State::Floor))
+        }))
+        .chain(iter::repeat(State::Floor).take(width))
+        .collect();
+
+    let mut grid2 = grid.clone();
+
+    loop {
+        for y in 1..height - 1 {
+            for x in 1..width - 1 {
+                let mut neighbors = 0;
+                for &yy in &[-1isize, 0, 1] {
+                    for &xx in &[-1isize, 0, 1] {
+                        if yy == 0 && xx == 0 {
+                            continue;
+                        }
+                        let id =
+                            (x.wrapping_add(xx as usize)) + (y.wrapping_add(yy as usize)) * width;
+                        neighbors += (grid[id] == State::Occupied) as u8;
+                    }
+                }
+                let id = x + y * width;
+                grid2[id] = match (grid[id], neighbors) {
+                    (State::Empty, 0) => State::Occupied,
+                    (State::Occupied, 4..=255) => State::Empty,
+                    _ => grid[id],
+                };
+            }
+        }
+        if grid == grid2 {
+            break;
+        }
+        std::mem::swap(&mut grid, &mut grid2);
+    }
+
+    let res: usize = grid.iter().map(|&s| (s == State::Occupied) as usize).sum();
+
+    println!("{:?}", res);
+}
+
+// 6:11
+#[test]
+fn day11_pt2() {
+    let input = std::include_str!("inputs/day11.txt");
+
+    let width = input.lines().next().unwrap().len() + 2;
+    let height = input.lines().count() + 2;
+
+    #[derive(Copy, Clone, PartialEq)]
+    #[repr(u8)]
+    enum State {
+        Floor,
+        Empty,
+        Occupied,
+    }
+
+    let mut grid: Vec<State> = iter::repeat(State::Floor)
+        .take(width)
+        .chain(input.lines().flat_map(|l| {
+            iter::once(State::Floor)
+                .chain(l.bytes().map(|c| match c {
+                    b'.' => State::Floor,
+                    b'L' => State::Empty,
+                    _ => State::Occupied,
+                }))
+                .chain(iter::once(State::Floor))
+        }))
+        .chain(iter::repeat(State::Floor).take(width))
+        .collect();
+
+    let mut grid2 = grid.clone();
+
+    loop {
+        for y in 1..height - 1 {
+            for x in 1..width - 1 {
+                let mut neighbors = 0;
+                for &yy in &[-1isize, 0, 1] {
+                    for &xx in &[-1isize, 0, 1] {
+                        if yy == 0 && xx == 0 {
+                            continue;
+                        }
+                        let mut x = x;
+                        let mut y = y;
+                        loop {
+                            x = x.wrapping_add(xx as usize);
+                            y = y.wrapping_add(yy as usize);
+                            if x == 0 || x >= width || y == 0 || y >= height {
+                                break;
+                            }
+                            let id = x + y * width;
+                            match grid[id] {
+                                State::Occupied => {
+                                    neighbors += 1;
+                                    break;
+                                }
+                                State::Empty => break,
+                                _ => (),
+                            }
+                        }
+                    }
+                }
+                let id = x + y * width;
+                grid2[id] = match (grid[id], neighbors) {
+                    (State::Empty, 0) => State::Occupied,
+                    (State::Occupied, 5..=255) => State::Empty,
+                    _ => grid[id],
+                };
+            }
+        }
+        if grid == grid2 {
+            break;
+        }
+        std::mem::swap(&mut grid, &mut grid2);
+    }
+
+    let res: usize = grid.iter().map(|&s| (s == State::Occupied) as usize).sum();
+
+    println!("{:?}", res);
 }
