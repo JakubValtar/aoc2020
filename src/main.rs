@@ -606,3 +606,43 @@ fn day09_pt2() {
 
     println!("{:?}", res);
 }
+
+// 7:17
+#[test]
+fn day10_pt1() {
+    let input = std::include_str!("inputs/day10.txt");
+    let mut adapters: Vec<i64> = input.lines().map(|l| l.parse().unwrap()).collect();
+    let mut hist = [0; 4];
+    adapters.push(0);
+    adapters.push(adapters.iter().max().unwrap() + 3);
+    adapters.sort_unstable();
+    for pair in adapters.windows(2) {
+        hist[(pair[1] - pair[0]) as usize] += 1;
+    }
+
+    let res = hist[1] * hist[3];
+
+    println!("{:?}", res);
+}
+
+// 12:50
+#[test]
+fn day10_pt2() {
+    let input = std::include_str!("inputs/day10.txt");
+    let mut adapters: Vec<i64> = input.lines().map(|l| l.parse().unwrap()).collect();
+    adapters.push(0);
+    adapters.sort_unstable();
+    let mut combs = vec![1usize];
+
+    for i in 1..adapters.len() {
+        let current = adapters[i];
+        let c = (0..i)
+            .rev()
+            .take_while(|&j| adapters[j as usize] >= current - 3)
+            .map(|j| combs[j as usize])
+            .sum();
+        combs.push(c);
+    }
+
+    println!("{:?}", combs.last());
+}
