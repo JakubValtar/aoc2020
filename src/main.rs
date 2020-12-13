@@ -560,3 +560,49 @@ fn day08_pt2() {
         }
     }
 }
+
+// 10:25
+#[test]
+fn day09_pt1() {
+    let input = std::include_str!("inputs/day09.txt");
+    let numbers: Vec<i64> = input.lines().map(|l| l.parse().unwrap()).collect();
+    let mut invalid = None;
+    let mut buf = [0; 25];
+    for (i, &n) in numbers.iter().enumerate().skip(25) {
+        buf.copy_from_slice(&numbers[i - 25..i]);
+        buf.sort_unstable();
+        let mut valid = false;
+        'outer: for (ia, a) in buf.iter().enumerate() {
+            for b in buf.iter().skip(ia + 1) {
+                if a + b == n {
+                    valid = true;
+                    break 'outer;
+                }
+            }
+        }
+        if !valid {
+            invalid = Some(n);
+            break;
+        }
+    }
+    println!("{:?}", invalid);
+}
+
+// 6:32
+#[test]
+fn day09_pt2() {
+    let input = std::include_str!("inputs/day09.txt");
+    let numbers: Vec<i64> = input.lines().map(|l| l.parse().unwrap()).collect();
+    let invalid = 177777905;
+    let mut res = None;
+    'outer: for window_size in 2..numbers.len() {
+        for window in numbers.windows(window_size) {
+            if window.iter().sum::<i64>() == invalid {
+                res = Some(window.iter().min().unwrap() + window.iter().max().unwrap());
+                break 'outer;
+            }
+        }
+    }
+
+    println!("{:?}", res);
+}
