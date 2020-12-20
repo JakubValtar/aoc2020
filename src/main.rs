@@ -794,3 +794,93 @@ fn day11_pt2() {
 
     println!("{:?}", res);
 }
+
+// 13:53
+#[test]
+fn day12_pt1() {
+    let input = std::include_str!("inputs/day12.txt");
+
+    let mut pos = (0, 0);
+    let mut heading = (1, 0);
+
+    for line in input.lines() {
+        let cmd = line.as_bytes()[0];
+        let mut amt = line[1..].parse::<i32>().unwrap();
+        match cmd {
+            b'N' => pos.1 += amt,
+            b'S' => pos.1 -= amt,
+            b'E' => pos.0 += amt,
+            b'W' => pos.0 -= amt,
+            b'F' => {
+                pos.0 += heading.0 * amt;
+                pos.1 += heading.1 * amt;
+            }
+            b'L' => {
+                while amt > 0 {
+                    let h0 = heading.0;
+                    heading.0 = -heading.1;
+                    heading.1 = h0;
+                    amt -= 90;
+                }
+            }
+            b'R' => {
+                while amt > 0 {
+                    let h0 = heading.0;
+                    heading.0 = heading.1;
+                    heading.1 = -h0;
+                    amt -= 90;
+                }
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    let res = pos.0.abs() + pos.1.abs();
+
+    println!("{}", res);
+}
+
+// 3:32
+#[test]
+fn day12_pt2() {
+    let input = std::include_str!("inputs/day12.txt");
+
+    let mut pos = (0, 0);
+    let mut heading = (10, 1);
+
+    for line in input.lines() {
+        let cmd = line.as_bytes()[0];
+        let mut amt = line[1..].parse::<i32>().unwrap();
+        match cmd {
+            b'N' => heading.1 += amt,
+            b'S' => heading.1 -= amt,
+            b'E' => heading.0 += amt,
+            b'W' => heading.0 -= amt,
+            b'F' => {
+                pos.0 += heading.0 * amt;
+                pos.1 += heading.1 * amt;
+            }
+            b'L' => {
+                while amt > 0 {
+                    let h0 = heading.0;
+                    heading.0 = -heading.1;
+                    heading.1 = h0;
+                    amt -= 90;
+                }
+            }
+            b'R' => {
+                while amt > 0 {
+                    let h0 = heading.0;
+                    heading.0 = heading.1;
+                    heading.1 = -h0;
+                    amt -= 90;
+                }
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    let res = pos.0.abs() + pos.1.abs();
+
+    println!("{}", res);
+}
