@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    iter,
+    iter, mem,
 };
 
 fn main() {
@@ -707,7 +707,7 @@ fn day11_pt1() {
         if grid == grid2 {
             break;
         }
-        std::mem::swap(&mut grid, &mut grid2);
+        mem::swap(&mut grid, &mut grid2);
     }
 
     let res: usize = grid.iter().map(|&s| (s == State::Occupied) as usize).sum();
@@ -787,7 +787,7 @@ fn day11_pt2() {
         if grid == grid2 {
             break;
         }
-        std::mem::swap(&mut grid, &mut grid2);
+        mem::swap(&mut grid, &mut grid2);
     }
 
     let res: usize = grid.iter().map(|&s| (s == State::Occupied) as usize).sum();
@@ -881,6 +881,171 @@ fn day12_pt2() {
     }
 
     let res = pos.0.abs() + pos.1.abs();
+
+    println!("{}", res);
+}
+
+// 13:04
+#[test]
+fn day13_pt1() {
+    let input = std::include_str!("inputs/day13.txt");
+
+    let mut lines = input.lines();
+
+    let now = lines.next().unwrap().parse::<u32>().unwrap();
+
+    let res = lines
+        .next()
+        .unwrap()
+        .split(',')
+        .filter_map(|b| b.parse::<u32>().ok())
+        .map(|b| {
+            let next = ((now - 1) / b + 1) * b;
+            (b, next - now)
+        })
+        .min_by_key(|&(_, wait)| wait)
+        .unwrap();
+
+    dbg!(res.0, res.1);
+
+    println!("{}", res.0 * res.1);
+}
+
+// 2:42:35 ^-^'
+#[test]
+fn day13_pt2() {
+    let input = std::include_str!("inputs/day13.txt");
+
+    let mut lines = input.lines();
+
+    lines.next().unwrap();
+
+    /// Multiplicative Inverse: a * a⁻¹ ≡ 1 (mod n)
+    fn multiplicative_inverse(a: i128, n: i128) -> Option<i128> {
+        let (mut t, mut newt) = (0, 1);
+        let (mut r, mut newr) = (n, a);
+        while newr != 0 {
+            t -= r / newr * newt;
+            r %= newr;
+            mem::swap(&mut t, &mut newt);
+            mem::swap(&mut r, &mut newr);
+        }
+        match (r, t) {
+            (r, _) if r > 1 => None,
+            (_, t) if t < 0 => Some(t + n),
+            (_, t) => Some(t),
+        }
+    }
+
+    struct Bus {
+        period: i128,
+        delay: i128,
+    };
+
+    let busses: Vec<Bus> = lines
+        .next()
+        .unwrap()
+        .split(',')
+        .enumerate()
+        .filter_map(|(delay, period)| {
+            period
+                .parse::<i128>()
+                .map(|period| Bus {
+                    period,
+                    delay: delay as i128,
+                })
+                .ok()
+        })
+        .collect();
+
+    /*
+        // Common period of all busses (when all busses meet at the port)
+        p_lc = p_1 * ... * p_n
+
+        // Congruence relation for a single bus line w/ period `p`:
+        //   leaves `d` minutes after the timestamp `x`
+        x + d ≡ 0 (mod p)
+        x ≡ -d (mod p)
+
+        // Multiply by `(p_lc / p)` to get all relations to modulo `p_lc`
+        (p_lc / p) * x ≡ (p_lc / p) * -d (mod (p_lc / p) * p)
+
+        // Sum the relations for all busses together
+        (p_lc/p_1) + ... + (p_lc/p_n) * x ≡ ((p_lc/p_1) * -d_1) + ... + ((p_lc/p_n) * -d_n) (mod p_lc)
+        ------------- a ------------- * x ≡ ---------------------- b ---------------------- (mod p_lc)
+        a * x ≡ b (mod p_lc)
+
+        // Use multiplicative inverse of `a` to get rid of `a` in front of `x`
+        (a * a⁻¹) * x ≡ a⁻¹ * b (mod p_lc)
+                1 * x ≡ a⁻¹ * b (mod p_lc)
+
+        // Final solution
+        x = (a⁻¹ * b) % p_lc
+    */
+
+    // Get the least common multiple of all line periods
+    let period_lc = busses.iter().map(|bus| bus.period).product();
+
+    let e = busses
+        .iter()
+        .map(|b| (period_lc / b.period, -b.delay * period_lc / b.period))
+        .fold((0, 0), |acc, b| (acc.0 + b.0, acc.1 + b.1));
+
+    let a = (e.0 % period_lc + period_lc) % period_lc;
+    let b = (e.1 % period_lc + period_lc) % period_lc;
+    let inv = multiplicative_inverse(a, period_lc).unwrap();
+    let res = (b * inv) % period_lc;
+
+    println!("{}", res);
+}
+
+#[test]
+fn day13_pt2b() {
+    let input = std::include_str!("inputs/day13.txt");
+
+    let mut lines = input.lines();
+
+    lines.next().unwrap().parse::<u32>().unwrap();
+
+    struct Bus {
+        period: i64,
+        delay: i64,
+    };
+
+    let mut busses: Vec<Bus> = lines
+        .next()
+        .unwrap()
+        .split(',')
+        .enumerate()
+        .filter_map(|(delay, period)| {
+            period
+                .parse::<i64>()
+                .map(|period| Bus {
+                    period,
+                    delay: delay as i64,
+                })
+                .ok()
+        })
+        .collect();
+
+    busses.sort_by_key(|b| b.period);
+
+    let mut bus = &busses[0];
+    let mut i = 0;
+    let mut step = 1;
+    let mut ts = 100_000_000_000_000i64;
+    let res = loop {
+        if (ts + bus.delay) % bus.period == 0 {
+            step *= bus.period;
+            i += 1;
+            if i == busses.len() {
+                break ts;
+            }
+            bus = &busses[i];
+        }
+
+        ts += step;
+    };
 
     println!("{}", res);
 }
