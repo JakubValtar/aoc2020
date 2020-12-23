@@ -1148,3 +1148,67 @@ fn day14_pt2() {
 
     println!("{}", res);
 }
+
+// 29:48
+#[test]
+fn day15_pt1() {
+    let input = std::include_str!("inputs/day15.txt");
+
+    let mut history = HashMap::new();
+
+    let mut last = 0;
+
+    input
+        .lines()
+        .next()
+        .unwrap()
+        .split(',')
+        .map(|ch| ch.parse::<usize>().unwrap())
+        .enumerate()
+        .for_each(|(turn, n)| {
+            if turn > 0 {
+                history.insert(last, turn);
+            }
+            last = n;
+        });
+
+    for turn in history.len() + 1..2020 {
+        let last_turn = *history.get(&last).unwrap_or(&turn);
+        history.insert(last, turn);
+        last = turn - last_turn;
+    }
+
+    println!("{}", last);
+}
+
+// 0:40
+#[test]
+fn day15_pt2() {
+    let input = std::include_str!("inputs/day15.txt");
+
+    let mut history = HashMap::new();
+
+    let mut last = 0;
+
+    input
+        .lines()
+        .next()
+        .unwrap()
+        .split(',')
+        .map(|ch| ch.parse::<usize>().unwrap())
+        .enumerate()
+        .for_each(|(turn, n)| {
+            if turn > 0 {
+                history.insert(last, turn);
+            }
+            last = n;
+        });
+
+    for turn in history.len() + 1..30000000 {
+        let last_turn = *history.get(&last).unwrap_or(&turn);
+        history.insert(last, turn);
+        last = turn - last_turn;
+    }
+
+    println!("{}", last);
+}
