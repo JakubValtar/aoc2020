@@ -1049,3 +1049,102 @@ fn day13_pt2b() {
 
     println!("{}", res);
 }
+
+// 17:39
+#[test]
+fn day14_pt1() {
+    let input = std::include_str!("inputs/day14.txt");
+
+    let mut or_mask = 0u64;
+    let mut and_mask = u64::MAX;
+    let mut memory: HashMap<u64, u64> = HashMap::new();
+
+    for line in input.lines() {
+        if let Some(mem) = line.strip_prefix("mem[") {
+            let addr = mem
+                .chars()
+                .take_while(|ch| ch.is_ascii_digit())
+                .collect::<String>()
+                .parse::<u64>()
+                .unwrap();
+            let mut val = mem.split(" = ").nth(1).unwrap().parse::<u64>().unwrap();
+            val |= or_mask;
+            val &= and_mask;
+            *memory.entry(addr).or_default() = val;
+        } else if let Some(mask) = line.strip_prefix("mask = ") {
+            or_mask = 0;
+            and_mask = u64::MAX;
+            for (i, ch) in mask.chars().rev().enumerate() {
+                match ch {
+                    '0' => and_mask &= !(1 << i),
+                    '1' => or_mask |= 1 << i,
+                    'X' => (),
+                    _ => unreachable!(),
+                }
+            }
+        } else {
+            unreachable!()
+        }
+    }
+
+    let res = memory.values().sum::<u64>();
+
+    println!("{}", res);
+}
+
+// 38:04
+#[test]
+fn day14_pt2() {
+    let input = std::include_str!("inputs/day14.txt");
+
+    let mut or_mask = 0;
+    let mut and_mask = (1 << 36) - 1;
+    let mut floating = vec![];
+    let mut memory: HashMap<u64, u64> = HashMap::new();
+
+    for line in input.lines() {
+        if let Some(mem) = line.strip_prefix("mem[") {
+            let mut addr = mem
+                .chars()
+                .take_while(|ch| ch.is_ascii_digit())
+                .collect::<String>()
+                .parse::<u64>()
+                .unwrap();
+            let val = mem.split(" = ").nth(1).unwrap().parse::<u64>().unwrap();
+
+            addr |= or_mask;
+            addr &= and_mask;
+
+            for i in 0..(1u64 << floating.len()) {
+                let addr = addr
+                    | floating
+                        .iter()
+                        .enumerate()
+                        .map(|(pos, &m)| ((i >> pos) & 1) * m)
+                        .sum::<u64>();
+                *memory.entry(addr).or_default() = val;
+            }
+        } else if let Some(mask) = line.strip_prefix("mask = ") {
+            or_mask = 0;
+            and_mask = (1 << 36) - 1;
+            floating.clear();
+            for (i, ch) in mask.chars().rev().enumerate() {
+                match ch {
+                    '0' => (),
+                    '1' => or_mask |= 1 << i,
+                    'X' => {
+                        and_mask &= !(1 << i);
+                        floating.push(1 << i);
+                    }
+                    _ => unreachable!(),
+                }
+            }
+        } else {
+            unreachable!()
+        }
+    }
+
+    let res = memory.values().sum::<u64>();
+
+    println!("{}", res);
+}
