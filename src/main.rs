@@ -1505,3 +1505,92 @@ fn day17_pt2() {
 
     println!("{}", res);
 }
+
+// 22:52
+#[test]
+fn day18_pt1() {
+    let input = std::include_str!("inputs/day18.txt");
+
+    #[derive(Debug)]
+    enum Op {
+        Add,
+        Mul,
+    }
+
+    fn eval_expr(expr: &str, pos: &mut usize) -> usize {
+        let mut acc: usize = 0;
+        let mut op: Op = Op::Add;
+        while *pos < expr.len() {
+            *pos += 1;
+            match expr.as_bytes()[*pos - 1] {
+                d if d.is_ascii_digit() => match op {
+                    Op::Add => acc += (d - b'0') as usize,
+                    Op::Mul => acc *= (d - b'0') as usize,
+                },
+                b'(' => {
+                    let d = eval_expr(expr, pos);
+                    match op {
+                        Op::Add => acc += d,
+                        Op::Mul => acc *= d,
+                    }
+                }
+                b'+' => op = Op::Add,
+                b'*' => op = Op::Mul,
+                b' ' => (),
+                b')' => break,
+                _ => unreachable!(),
+            }
+        }
+        acc
+    }
+
+    let mut sum: usize = 0;
+
+    for line in input.lines() {
+        sum += eval_expr(line, &mut 0);
+    }
+
+    println!("{}", sum);
+}
+
+// 21:42
+#[test]
+fn day18_pt2() {
+    let input = std::include_str!("inputs/day18.txt");
+
+    fn eval_expr(expr: &str, pos: &mut usize) -> usize {
+        let mut mul_acc: usize = 1;
+        let mut add_acc: usize = 0;
+        while *pos < expr.len() {
+            *pos += 1;
+            match expr.as_bytes()[*pos - 1] {
+                d if d.is_ascii_digit() => {
+                    add_acc += (d - b'0') as usize;
+                }
+                b'(' => {
+                    add_acc += eval_expr(expr, pos);
+                }
+                b'+' => (),
+                b'*' => {
+                    // Multiplication ends the previous chain of additions
+                    // Submit it and clear add_acc to get ready for the next chain
+                    mul_acc *= add_acc;
+                    add_acc = 0;
+                }
+                b' ' => (),
+                b')' => break,
+                _ => unreachable!(),
+            }
+        }
+        mul_acc *= add_acc;
+        mul_acc
+    }
+
+    let mut sum: usize = 0;
+
+    for line in input.lines() {
+        sum += eval_expr(line, &mut 0);
+    }
+
+    println!("{}", sum);
+}
