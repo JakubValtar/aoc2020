@@ -1383,3 +1383,125 @@ fn day16_pt2() {
 
     println!("{}", res);
 }
+
+// 18:45
+#[test]
+fn day17_pt1() {
+    let input = std::include_str!("inputs/day17.txt");
+
+    let width0 = input.lines().next().unwrap().len();
+    let height0 = input.lines().count();
+    let depth0 = 1;
+
+    let step_count = 6;
+    let margin = step_count + 1;
+
+    let width = width0 + 2 * margin;
+    let height = height0 + 2 * margin;
+    let depth = depth0 + 2 * margin;
+
+    let id = |x: usize, y: usize, z: usize| z * width * height + y * width + x;
+
+    let mut grid = vec![false; width * height * depth];
+    let mut grid2 = grid.clone();
+
+    for (y, line) in input.lines().enumerate() {
+        for (x, cell) in line.chars().enumerate() {
+            grid[id(x + margin, y + margin, 0 + margin)] = cell == '#';
+        }
+    }
+
+    for _ in 0..step_count {
+        for z in 1..depth - 1 {
+            for y in 1..height - 1 {
+                for x in 1..width - 1 {
+                    let mut neighbor_count = 0;
+                    for zz in z - 1..=z + 1 {
+                        for yy in y - 1..=y + 1 {
+                            for xx in x - 1..=x + 1 {
+                                neighbor_count += grid[id(xx, yy, zz)] as usize;
+                            }
+                        }
+                    }
+                    let cell_id = id(x, y, z);
+                    let state = grid[cell_id];
+                    neighbor_count -= state as usize;
+                    grid2[cell_id] = match (state, neighbor_count) {
+                        (true, 2..=3) => true,
+                        (false, 3) => true,
+                        _ => false,
+                    };
+                }
+            }
+        }
+        mem::swap(&mut grid, &mut grid2);
+    }
+
+    let res = grid.iter().filter(|&&state| state).count();
+
+    println!("{}", res);
+}
+
+// 4:44
+#[test]
+fn day17_pt2() {
+    let input = std::include_str!("inputs/day17.txt");
+
+    let width0 = input.lines().next().unwrap().len();
+    let height0 = input.lines().count();
+    let depth0 = 1;
+    let wepth0 = 1;
+
+    let step_count = 6;
+    let margin = step_count + 1;
+
+    let width = width0 + 2 * margin;
+    let height = height0 + 2 * margin;
+    let depth = depth0 + 2 * margin;
+    let wepth = wepth0 + 2 * margin;
+
+    let id = |x: usize, y: usize, z: usize, w: usize| ((w * depth + z) * height + y) * width + x;
+
+    let mut grid = vec![false; width * height * depth * wepth];
+    let mut grid2 = grid.clone();
+
+    for (y, line) in input.lines().enumerate() {
+        for (x, cell) in line.chars().enumerate() {
+            grid[id(x + margin, y + margin, 0 + margin, 0 + margin)] = cell == '#';
+        }
+    }
+
+    for _ in 0..step_count {
+        for w in 1..wepth - 1 {
+            for z in 1..depth - 1 {
+                for y in 1..height - 1 {
+                    for x in 1..width - 1 {
+                        let mut neighbor_count = 0;
+                        for ww in w - 1..=w + 1 {
+                            for zz in z - 1..=z + 1 {
+                                for yy in y - 1..=y + 1 {
+                                    for xx in x - 1..=x + 1 {
+                                        neighbor_count += grid[id(xx, yy, zz, ww)] as usize;
+                                    }
+                                }
+                            }
+                        }
+                        let cell_id = id(x, y, z, w);
+                        let state = grid[cell_id];
+                        neighbor_count -= state as usize;
+                        grid2[cell_id] = match (state, neighbor_count) {
+                            (true, 2..=3) => true,
+                            (false, 3) => true,
+                            _ => false,
+                        };
+                    }
+                }
+            }
+        }
+        mem::swap(&mut grid, &mut grid2);
+    }
+
+    let res = grid.iter().filter(|&&state| state).count();
+
+    println!("{}", res);
+}
