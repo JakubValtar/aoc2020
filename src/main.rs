@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     iter, mem,
+    ops::RangeInclusive,
 };
 
 fn main() {
@@ -1211,4 +1212,174 @@ fn day15_pt2() {
     }
 
     println!("{}", last);
+}
+
+// 19:24
+#[test]
+fn day16_pt1() {
+    let input = std::include_str!("inputs/day16.txt");
+
+    struct Field {
+        _name: String,
+        range1: RangeInclusive<usize>,
+        range2: RangeInclusive<usize>,
+    }
+
+    let fields = input
+        .lines()
+        .take_while(|line| !line.is_empty())
+        .map(|line| {
+            let mut parts = line.split(": ");
+            let name = parts.next().unwrap();
+            let mut ranges = parts.next().unwrap().split(" or ");
+            let mut range1 = ranges
+                .next()
+                .unwrap()
+                .split('-')
+                .map(|num| num.parse::<usize>().unwrap());
+            let mut range2 = ranges
+                .next()
+                .unwrap()
+                .split('-')
+                .map(|num| num.parse::<usize>().unwrap());
+            Field {
+                _name: name.to_owned(),
+                range1: range1.next().unwrap()..=range1.next().unwrap(),
+                range2: range2.next().unwrap()..=range2.next().unwrap(),
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let res = input
+        .lines()
+        .skip_while(|&line| line != "nearby tickets:")
+        .skip(1)
+        .map(|line| {
+            line.split(',')
+                .map(|val| val.parse::<usize>().unwrap())
+                .filter(|val| {
+                    fields
+                        .iter()
+                        .all(|f| !f.range1.contains(val) && !f.range2.contains(val))
+                })
+                .sum::<usize>()
+        })
+        .sum::<usize>();
+
+    println!("{}", res);
+}
+
+// 1:16:56
+#[test]
+fn day16_pt2() {
+    let input = std::include_str!("inputs/day16.txt");
+
+    #[derive(Debug)]
+    struct Rule {
+        name: String,
+        range1: RangeInclusive<usize>,
+        range2: RangeInclusive<usize>,
+    }
+
+    let rules = input
+        .lines()
+        .take_while(|line| !line.is_empty())
+        .map(|line| {
+            let mut parts = line.split(": ");
+            let name = parts.next().unwrap();
+            let mut ranges = parts.next().unwrap().split(" or ");
+            let mut range1 = ranges
+                .next()
+                .unwrap()
+                .split('-')
+                .map(|num| num.parse::<usize>().unwrap());
+            let mut range2 = ranges
+                .next()
+                .unwrap()
+                .split('-')
+                .map(|num| num.parse::<usize>().unwrap());
+            Rule {
+                name: name.to_owned(),
+                range1: range1.next().unwrap()..=range1.next().unwrap(),
+                range2: range2.next().unwrap()..=range2.next().unwrap(),
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let mut tickets = input
+        .lines()
+        .skip_while(|&line| line != "nearby tickets:")
+        .skip(1)
+        .map(|line| {
+            let mut arr = [0usize; 20];
+            line.split(',')
+                .map(|val| val.parse::<usize>().unwrap())
+                .enumerate()
+                .for_each(|(i, val)| arr[i] = val);
+            arr
+        })
+        .filter(|ticket| {
+            ticket.iter().all(|val| {
+                rules
+                    .iter()
+                    .any(|rule| rule.range1.contains(val) || rule.range2.contains(val))
+            })
+        })
+        .collect::<Vec<_>>();
+
+    let my_ticket = input
+        .lines()
+        .skip_while(|&line| line != "your ticket:")
+        .skip(1)
+        .map(|line| {
+            let mut arr = [0usize; 20];
+            line.split(',')
+                .map(|val| val.parse::<usize>().unwrap())
+                .enumerate()
+                .for_each(|(i, val)| arr[i] = val);
+            arr
+        })
+        .next()
+        .unwrap();
+
+    tickets.push(my_ticket);
+
+    let mut rule_valid_fields: Vec<HashSet<usize>> = vec![(0..20).collect(); 20];
+
+    for ticket in &tickets {
+        for (valid_fields, rule) in rule_valid_fields.iter_mut().zip(rules.iter()) {
+            if valid_fields.len() > 1 {
+                valid_fields.retain(|&field| {
+                    let val = ticket[field];
+                    rule.range1.contains(&val) || rule.range2.contains(&val)
+                });
+            }
+        }
+    }
+
+    let mut rule_field: [Option<usize>; 20] = [None; 20];
+
+    loop {
+        for rule in 0..20 {
+            if rule_field[rule] == None && rule_valid_fields[rule].len() == 1 {
+                let field = *rule_valid_fields[rule].iter().next().unwrap();
+                rule_field[rule] = Some(field);
+                for valid_fields in &mut rule_valid_fields {
+                    valid_fields.remove(&field);
+                }
+            }
+        }
+        if rule_field.iter().all(|f| f.is_some()) {
+            break;
+        }
+    }
+
+    let res: usize = rule_field
+        .iter()
+        .zip(rules)
+        .filter(|(_, rule)| rule.name.starts_with("departure"))
+        .map(|(field, _)| my_ticket[field.unwrap()])
+        .product();
+
+    println!("{}", res);
 }
