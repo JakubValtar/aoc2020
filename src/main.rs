@@ -1594,3 +1594,195 @@ fn day18_pt2() {
 
     println!("{}", sum);
 }
+
+// 1:30:48
+#[test]
+fn day19_pt1() {
+    let input = std::include_str!("inputs/day19.txt");
+
+    let mut literals: HashMap<u8, usize> = HashMap::new();
+    let mut rules: HashMap<usize, Rule> = HashMap::new();
+
+    struct Rule(Vec<Vec<usize>>);
+
+    fn parse_seq(s: &str) -> Vec<usize> {
+        let parts = s.split(' ');
+        let seq: Vec<usize> = parts
+            .map(|p| p.trim())
+            .map(|p| p.parse::<usize>().unwrap())
+            .collect();
+        seq
+    }
+
+    fn parse_rule(s: &str) -> Vec<Vec<usize>> {
+        let parts = s.split(" | ");
+        parts.map(|p| parse_seq(p)).collect::<Vec<_>>()
+    }
+
+    for line in input.lines() {
+        if line.is_empty() {
+            break;
+        }
+        let mut parts = line.split(": ");
+        let num = parts.next().unwrap().parse::<usize>().unwrap();
+        let rule = parts.next().unwrap();
+        let bytes = rule.as_bytes();
+        if bytes[0] == b'\"' {
+            literals.insert(bytes[1], num);
+        } else {
+            rules.insert(num, Rule(parse_rule(rule)));
+        }
+    }
+
+    let mut sum = 0;
+
+    fn match_seq(
+        target: &[usize],
+        stack: &mut Vec<usize>,
+        lits: &[usize],
+        rules: &HashMap<usize, Rule>,
+    ) -> bool {
+        if target.is_empty() && stack.is_empty() {
+            true
+        } else if target.is_empty() != stack.is_empty() {
+            false
+        } else {
+            let next = stack.pop().unwrap();
+            if next == target[0] {
+                if match_seq(&target[1..], stack, lits, rules) {
+                    return true;
+                }
+            } else if !lits.contains(&next) {
+                let rule = rules.get(&next).unwrap();
+                for opt in &rule.0 {
+                    for &sym in opt.iter().rev() {
+                        stack.push(sym);
+                    }
+                    if match_seq(target, stack, lits, rules) {
+                        return true;
+                    }
+                    for _ in opt.iter() {
+                        stack.pop();
+                    }
+                }
+            }
+            stack.push(next);
+            false
+        }
+    };
+
+    let lit_a = *literals.get(&b'a').unwrap();
+    let lit_b = *literals.get(&b'b').unwrap();
+    let lits = [lit_a, lit_b];
+    let mut stack = Vec::new();
+
+    for line in input.lines().skip_while(|l| !l.is_empty()).skip(1) {
+        let bytes = line.as_bytes();
+        let seq: Vec<usize> = bytes.iter().map(|b| *literals.get(b).unwrap()).collect();
+        for &num in rules.keys() {
+            stack.clear();
+            stack.push(num);
+            if match_seq(&seq, &mut stack, &lits, &rules) {
+                sum += 1;
+                break;
+            }
+        }
+    }
+    println!("{}", sum);
+}
+
+// 10:18
+#[test]
+fn day19_pt2() {
+    let input = std::include_str!("inputs/day19.txt");
+
+    let mut literals: HashMap<u8, usize> = HashMap::new();
+    let mut rules: HashMap<usize, Rule> = HashMap::new();
+
+    struct Rule(Vec<Vec<usize>>);
+
+    fn parse_seq(s: &str) -> Vec<usize> {
+        let parts = s.split(' ');
+        let seq: Vec<usize> = parts
+            .map(|p| p.trim())
+            .map(|p| p.parse::<usize>().unwrap())
+            .collect();
+        seq
+    }
+
+    fn parse_rule(s: &str) -> Vec<Vec<usize>> {
+        let parts = s.split(" | ");
+        parts.map(|p| parse_seq(p)).collect::<Vec<_>>()
+    }
+
+    for line in input.lines() {
+        if line.is_empty() {
+            break;
+        }
+        let mut parts = line.split(": ");
+        let num = parts.next().unwrap().parse::<usize>().unwrap();
+        let rule = parts.next().unwrap();
+        let bytes = rule.as_bytes();
+        if bytes[0] == b'\"' {
+            literals.insert(bytes[1], num);
+        } else {
+            rules.insert(num, Rule(parse_rule(rule)));
+        }
+    }
+
+    rules.insert(8, Rule(vec![vec![42], vec![42, 8]]));
+    rules.insert(11, Rule(vec![vec![42, 31], vec![42, 11, 31]]));
+
+    let mut sum = 0;
+
+    fn match_seq(
+        target: &[usize],
+        stack: &mut Vec<usize>,
+        lits: &[usize],
+        rules: &HashMap<usize, Rule>,
+    ) -> bool {
+        if target.is_empty() && stack.is_empty() {
+            true
+        } else if target.is_empty() != stack.is_empty() {
+            false
+        } else {
+            let next = stack.pop().unwrap();
+            if next == target[0] {
+                if match_seq(&target[1..], stack, lits, rules) {
+                    return true;
+                }
+            } else if !lits.contains(&next) {
+                let rule = rules.get(&next).unwrap();
+                for opt in &rule.0 {
+                    for &sym in opt.iter().rev() {
+                        stack.push(sym);
+                    }
+                    if match_seq(target, stack, lits, rules) {
+                        return true;
+                    }
+                    for _ in opt.iter() {
+                        stack.pop();
+                    }
+                }
+            }
+            stack.push(next);
+            false
+        }
+    };
+
+    let lit_a = *literals.get(&b'a').unwrap();
+    let lit_b = *literals.get(&b'b').unwrap();
+    let lits = [lit_a, lit_b];
+    let mut stack = Vec::new();
+
+    for line in input.lines().skip_while(|l| !l.is_empty()).skip(1) {
+        let bytes = line.as_bytes();
+        let seq: Vec<usize> = bytes.iter().map(|b| *literals.get(b).unwrap()).collect();
+        stack.clear();
+        stack.push(0);
+        if match_seq(&seq, &mut stack, &lits, &rules) {
+            sum += 1;
+        }
+    }
+    println!("{}", sum);
+}
