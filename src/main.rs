@@ -1786,3 +1786,374 @@ fn day19_pt2() {
     }
     println!("{}", sum);
 }
+
+// 39:22
+#[test]
+fn day20_pt1() {
+    let input = std::include_str!("inputs/day20.txt");
+
+    struct Tile {
+        id: usize,
+        edges: [[u16; 4]; 8],
+    }
+
+    let mut tiles = Vec::new();
+
+    for tile in input.split("\n\n") {
+        let id = tile
+            .lines()
+            .next()
+            .and_then(|l| l.strip_prefix("Tile "))
+            .and_then(|l| l.strip_suffix(":"))
+            .and_then(|l| l.parse::<usize>().ok())
+            .unwrap();
+
+        let mut top = 0;
+        let mut bottom = 0;
+        let mut left = 0;
+        let mut right = 0;
+
+        for (y, line) in tile.lines().skip(1).enumerate() {
+            if y == 0 {
+                for b in line.bytes() {
+                    top *= 2;
+                    top += (b == b'#') as u16;
+                }
+            }
+            if y == 9 {
+                for b in line.bytes() {
+                    bottom *= 2;
+                    bottom += (b == b'#') as u16;
+                }
+            }
+            left *= 2;
+            left += (line.bytes().next().unwrap() == b'#') as u16;
+
+            right *= 2;
+            right += (line.bytes().last().unwrap() == b'#') as u16;
+        }
+
+        bottom = bottom.reverse_bits() >> 6;
+        left = left.reverse_bits() >> 6;
+
+        let mut tile = Tile {
+            id,
+            edges: Default::default(),
+        };
+        let mut edge = [top, right, bottom, left];
+        for j in 0..2 {
+            for i in 0..4 {
+                tile.edges[i + 4 * j] = edge;
+                edge.rotate_left(1);
+            }
+            edge.reverse();
+            for e in &mut edge {
+                *e = e.reverse_bits() >> 6;
+            }
+        }
+        tiles.push(tile);
+    }
+
+    let mut map: HashMap<u16, Vec<usize>> = HashMap::new();
+    for (i, tile) in tiles.iter().enumerate() {
+        for edge in &[&tile.edges[0], &tile.edges[4]] {
+            for e in *edge {
+                let is = map.entry(*e).or_default();
+                if !is.contains(&i) {
+                    is.push(i);
+                }
+            }
+        }
+    }
+
+    let mut unique: Vec<usize> = map
+        .iter()
+        .filter(|(&e, tiles)| {
+            tiles.len() == 1 && map.get(&(e.reverse_bits() >> 6)).unwrap().len() == 1
+        })
+        .map(|(_, tiles)| tiles[0])
+        .collect();
+    unique.sort_unstable();
+
+    let mut hist = vec![0; tiles.len()];
+    for &i in &unique {
+        hist[i] += 1;
+    }
+
+    let mut res = 1;
+    let mut count = 0;
+
+    for (i, _) in hist.iter().enumerate().filter(|(_, e)| **e == 4) {
+        res *= tiles[i].id;
+        count += 1;
+    }
+
+    println!("{}, count: {}", res, count);
+}
+
+// 2:32:55
+#[test]
+fn day20_pt2() {
+    let input = std::include_str!("inputs/day20.txt");
+
+    #[derive(Copy, Clone)]
+    struct Tile {
+        edges: [[u16; 4]; 8],
+        content: u64,
+    }
+
+    fn other_edge(e: u16) -> u16 {
+        e.reverse_bits() >> 6
+    }
+
+    let mut tiles = Vec::new();
+
+    for tile in input.split("\n\n") {
+        let mut top = 0;
+        let mut bottom = 0;
+        let mut left = 0;
+        let mut right = 0;
+        let mut content: u64 = 0;
+
+        for (y, line) in tile.lines().skip(1).enumerate() {
+            if y == 0 {
+                for b in line.bytes() {
+                    top *= 2;
+                    top += (b == b'#') as u16;
+                }
+            } else if y == 9 {
+                for b in line.bytes() {
+                    bottom *= 2;
+                    bottom += (b == b'#') as u16;
+                }
+            } else {
+                for b in line.bytes().skip(1).take(8) {
+                    content *= 2;
+                    content += (b == b'#') as u64;
+                }
+            }
+            left *= 2;
+            left += (line.bytes().next().unwrap() == b'#') as u16;
+
+            right *= 2;
+            right += (line.bytes().last().unwrap() == b'#') as u16;
+        }
+
+        bottom = other_edge(bottom);
+        left = other_edge(left);
+
+        let mut tile = Tile {
+            edges: Default::default(),
+            content,
+        };
+        let mut edge = [top, right, bottom, left];
+        for j in 0..2 {
+            for i in 0..4 {
+                tile.edges[i + 4 * j] = edge;
+                edge.rotate_right(1);
+            }
+            edge.reverse();
+            for e in &mut edge {
+                *e = other_edge(*e);
+            }
+        }
+        for edge in tile.edges.iter() {
+            assert_eq!((edge[0] >> 9) & 1, edge[3] & 1);
+            assert_eq!((edge[1] >> 9) & 1, edge[0] & 1);
+            assert_eq!((edge[2] >> 9) & 1, edge[1] & 1);
+            assert_eq!((edge[3] >> 9) & 1, edge[2] & 1);
+        }
+        tiles.push(tile);
+    }
+
+    let mut map: HashMap<u16, Vec<usize>> = HashMap::new();
+    for (i, tile) in tiles.iter().enumerate() {
+        for edge in &[&tile.edges[0], &tile.edges[4]] {
+            for e in *edge {
+                let is = map.entry(*e).or_default();
+                if !is.contains(&i) {
+                    is.push(i);
+                }
+            }
+        }
+    }
+
+    let mut unique: Vec<usize> = map
+        .iter()
+        .filter(|(&e, tiles)| tiles.len() == 1 && map.get(&other_edge(e)).unwrap().len() == 1)
+        .map(|(_, tiles)| tiles[0])
+        .collect();
+    unique.sort_unstable();
+
+    let mut hist = vec![0; tiles.len()];
+    for &i in &unique {
+        hist[i] += 1;
+    }
+
+    let corner_i = hist
+        .iter()
+        .enumerate()
+        .filter(|(_, e)| **e == 4)
+        .map(|(i, _)| i)
+        .next()
+        .unwrap();
+
+    let mut grid = vec![(0usize, 0usize); tiles.len()];
+
+    {
+        let mut ori: usize = 0;
+        let corner = tiles[corner_i];
+        for _ in 0..4 {
+            let edges = corner.edges[ori];
+            let top_edge = edges[0];
+            let left_edge = edges[3];
+            if map[&top_edge].len() != 1 || map[&left_edge].len() != 1 {
+                ori += 1
+            }
+        }
+        assert!(ori < 4);
+        grid[0] = (corner_i, ori);
+    }
+
+    for i in 1..tiles.len() {
+        let last_i;
+        let edge_ori;
+        let other_edge_ori;
+        if i / 12 == 0 {
+            last_i = i - 1;
+            edge_ori = 1; // right
+            other_edge_ori = 3; // left
+        } else {
+            last_i = i - 12;
+            edge_ori = 2; // bottom
+            other_edge_ori = 0; // top
+        }
+        let last = grid[last_i];
+        let tile = tiles[last.0];
+        let edges = tile.edges[last.1];
+        let matching_edge = other_edge(edges[edge_ori]);
+        let mut edges = map.get(&matching_edge).unwrap().clone();
+        edges.remove(edges.iter().position(|e| *e == last.0).unwrap());
+        assert_eq!(edges.len(), 1);
+        let ori = tiles[edges[0]]
+            .edges
+            .iter()
+            .enumerate()
+            .find(|(_, edges)| edges[other_edge_ori] == matching_edge)
+            .unwrap();
+        grid[i] = (edges[0], ori.0);
+    }
+
+    let mut is: Vec<_> = grid.iter().map(|(i, _)| i).copied().collect();
+    is.sort_unstable();
+    is.dedup();
+    assert_eq!(is.len(), grid.len());
+
+    for y in 0..12 {
+        for x in 0..11 {
+            let t1 = grid[y * 12 + x];
+            let t2 = grid[y * 12 + x + 1];
+            assert_eq!(
+                tiles[t1.0].edges[t1.1][1],
+                other_edge(tiles[t2.0].edges[t2.1][3])
+            );
+        }
+    }
+    for y in 0..11 {
+        for x in 0..12 {
+            let t1 = grid[y * 12 + x];
+            let t2 = grid[(y + 1) * 12 + x];
+            assert_eq!(
+                tiles[t1.0].edges[t1.1][2],
+                other_edge(tiles[t2.0].edges[t2.1][0])
+            );
+        }
+    }
+
+    let pic_w = 12 * 8;
+    let pic_h = 12 * 8;
+    let mut picture = vec![0u8; pic_w * pic_h];
+    for (i, &(tile_i, ori)) in grid.iter().enumerate() {
+        let tile_x = i % 12;
+        let tile_y = i / 12;
+        let tile = tiles[tile_i];
+        let content: u64 = tile.content;
+        for y in 0..8usize {
+            for x in 0..8usize {
+                let rows = content.to_be_bytes();
+                let val = match ori {
+                    0 => (rows[y] >> (7 - x)) & 1,
+                    1 => (rows[7 - x] >> (7 - y)) & 1,
+                    2 => (rows[7 - y] >> x) & 1,
+                    3 => (rows[x] >> y) & 1,
+                    4 => (rows[x] >> (7 - y)) & 1,
+                    5 => (rows[y] >> x) & 1,
+                    6 => (rows[7 - x] >> y) & 1,
+                    7 => (rows[7 - y] >> (7 - x)) & 1,
+                    _ => unreachable!(),
+                };
+                let pic_x = tile_x * 8 + x;
+                let pic_y = tile_y * 8 + y;
+                picture[pic_y * 12 * 8 + pic_x] = if val == 1 { b'#' } else { b'.' };
+            }
+        }
+    }
+
+    let mon_w = 20;
+    let mon_h = 3;
+    let monster = [
+        b"                  # ",
+        b"#    ##    ##    ###",
+        b" #  #  #  #  #  #   ",
+    ];
+
+    for ori in 0..8 {
+        let id_fn = |x: usize, y: usize| -> usize {
+            match ori {
+                0 => y * pic_w + x,
+                1 => (pic_h - 1 - x) * pic_w + y,
+                2 => (pic_h - 1 - y) * pic_w + (pic_w - 1 - x),
+                3 => x * pic_w + (pic_w - 1 - y),
+                4 => x * pic_w + y,
+                5 => y * pic_w + (pic_w - 1 - x),
+                6 => (pic_h - 1 - x) * pic_w + (pic_w - 1 - y),
+                7 => (pic_h - 1 - y) * pic_w + x,
+                _ => unreachable!(),
+            }
+        };
+        for y in 0..pic_h - mon_h + 1 {
+            'pos_loop: for x in 0..pic_w - mon_w + 1 {
+                for yy in 0..mon_h {
+                    for xx in 0..mon_w {
+                        if monster[yy][xx] == b'#' && picture[id_fn(x + xx, y + yy)] == b'.' {
+                            continue 'pos_loop;
+                        }
+                    }
+                }
+                for yy in 0..mon_h {
+                    for xx in 0..mon_w {
+                        if monster[yy][xx] == b'#' {
+                            let prev = picture[id_fn(x + xx, y + yy)];
+                            assert!(prev == b'#' || prev == b'O');
+                            picture[id_fn(x + xx, y + yy)] = b'O';
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // for row_block in picture.chunks_exact(pic_w * 8) {
+    //     for row in row_block.chunks_exact(pic_w) {
+    //         for block in row.chunks_exact(8) {
+    //             print!("{} ", std::str::from_utf8(block).unwrap());
+    //         }
+    //         println!();
+    //     }
+    //     println!();
+    // }
+
+    let res = picture.iter().filter(|&&c| c == b'#').count();
+
+    println!("{}", res);
+}
